@@ -1,18 +1,39 @@
 package jp.etaxi.driver07
 
-import androidx.appcompat.app.AppCompatActivity
+import android.Manifest
+import android.annotation.TargetApi
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.Toast
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.database.annotations.NotNull
+import com.pranavpandey.android.dynamic.toasts.DynamicToast
+import jp.etaxi.driver07.service.Util.isMyServiceRunning
+import jp.etaxi.driver07.service.service.LocationService
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
+
+    var mLocationService = LocationService()
+    var mServiceIntent: Intent? = null
 
     private lateinit var mMap: GoogleMap
 
@@ -27,7 +48,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         val button = findViewById<Button>(R.id.button2)
         button.setOnClickListener {
             Toast.makeText(this, "クリックされました。", Toast.LENGTH_SHORT).show()
+
+            //サービス起動
+            startlocationservice()
+
         }
+
+
+
 
     }
 
@@ -71,6 +99,148 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
 
+    fun call_postApi(
+        baseurl: String?,
+        method: String,
+        parameterModels: ArrayList<ParameterModel?>?
+    ) {
+        API().call_POSTApi(
+            baseurl,
+            parameterModels,
+            method,
+            object : Callback {
+                @Throws(IOException::class)
+                override fun onResponse(@NotNull call: Call, @NotNull response: Response) {
+                    Parseresonse(response.body!!.string(), method)
+                }
+
+                override fun onFailure(@NotNull call: Call, @NotNull e: IOException) {
+                    Log.d("execption==", e.toString())
+                    runOnUiThread {
+                        DynamicToast.makeError(this@MainActivity, "エラー1000", 2500).show()
+                    }
+                }
+            }
+        )
+    }
+
+
+
+
+    fun call_GetApi(
+        baseurl: String?,
+        method: String,
+        parameterModels: ArrayList<ParameterModel?>?
+    ) { // parameters will be added after ? or & as wonderful Get method
+
+        API().call_GETApi(baseurl, parameterModels, method, object : Callback {
+            override fun onFailure(@NotNull call: Call, @NotNull e: IOException) {
+
+                runOnUiThread { DynamicToast.makeError(this@MainActivity, "エラー200", 2500).show() }
+            }
+
+            @Throws(IOException::class)
+            override fun onResponse(@NotNull call: Call, @NotNull response: Response) {
+
+                Parseresonse(response.body!!.string(), method)
+            }
+        })
+    }
+
+    private fun Parseresonse(json: String, method: String) {
+        Log.d("params===", json)
+
+        try {
+            val response = JSONObject(json)
+            if (method == "json") {
+                if (response.has("error_message")) {
+                    runOnUiThread {
+                        try {
+                            DynamicToast.makeError(
+                                this@MainActivity,
+                                response.getString("error_message"),
+                                2500
+                            ).show()
+                        } catch (e: JSONException) {
+                            e.printStackTrace()
+                        }
+                    }
+                } else {
+                    runOnUiThread { returnapireponse(response, method) }
+                }
+            } else {
+                val result_code = response.getInt("result_code")
+                if (result_code == 0) {
+                    runOnUiThread { returnapireponse(response, method) }
+                } else {
+                    runOnUiThread {
+                        try {
+                            DynamicToast.makeError(
+                                this@MainActivity,
+                                response.getString("message"),
+                                2500
+                            ).show()
+                        } catch (e: JSONException) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: JSONException) {
+            e.printStackTrace()
+            runOnUiThread { DynamicToast.makeError(this@MainActivity, "エラー300", 2500).show() }
+        }
+    }
+
+    fun returnapireponse(response: JSONObject?, method: String?) {}
+
+
+    fun startlocationservice() {
+        //============= GPS service==========================
+        requestPermissionsSafely(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 200
+        )
+        mLocationService = LocationService()
+        mServiceIntent = Intent(this, mLocationService.javaClass)
+        if (!isMyServiceRunning(mLocationService.javaClass, this)) {
+            startService(mServiceIntent)
+            Toast.makeText(
+                this,
+                "サービススタート",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            Toast.makeText(
+                this,
+                "サービス実行中",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    fun endlocationservice() {
+        if (mServiceIntent != null) {
+            Log.d("stopservice==", "stopservie")
+            stopService(mServiceIntent)
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    fun requestPermissionsSafely(
+        permissions: Array<String?>?,
+        requestCode: Int
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(permissions!!, requestCode)
+        }
+    }
+
+    override fun onDestroy() {
+        if (mServiceIntent != null) {
+            stopService(mServiceIntent)
+        }
+        super.onDestroy()
+    }
 
 
 }

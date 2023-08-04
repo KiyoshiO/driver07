@@ -21,7 +21,6 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
 import com.google.firebase.database.DatabaseReference
 
-import jp.etaxi.driver07.service.receiver.RestartBackgroundService
 import java.util.*
 
 class LocationService : Service() {
@@ -46,7 +45,7 @@ class LocationService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChanel() {
-        val NOTIFICATION_CHANNEL_ID = "com.hw.etaxi"
+        val NOTIFICATION_CHANNEL_ID = "jp.etaxi.driver07"
         val channelName = "Background Service"
         val chan = NotificationChannel(
             NOTIFICATION_CHANNEL_ID,
@@ -95,11 +94,7 @@ class LocationService : Service() {
                 if (latitude != 0.0 && longitude != 0.0) {
                     databaserefernece?.child("lat")?.setValue(latitude)
                     databaserefernece?.child("lng")?.setValue(longitude)
-                    Log.d(
-                        "Location::",
-                        latitude.toString() + ":::" + longitude.toString() + "Count" +
-                                count.toString()
-                    )
+                    Log.d("Location::",latitude.toString() + ":::" + longitude.toString() + "Count" + count.toString() )
                 }
             }
         }
@@ -141,7 +136,9 @@ class LocationService : Service() {
                     if (location != null) {
                         latitude = location.latitude
                         longitude = location.longitude
-                       // Log.d("Location Service", "location update $location")
+
+
+                        Log.d("Location Service", "location update $location")
                     }
                 }
             }, Looper.myLooper()!!)
