@@ -20,6 +20,9 @@ import androidx.core.content.ContextCompat
 
 import com.google.android.gms.location.*
 import com.google.firebase.database.DatabaseReference
+import jp.etaxi.driver07.API
+import jp.etaxi.driver07.MainActivity
+import jp.etaxi.driver07.ParameterModel
 
 import java.util.*
 
@@ -30,6 +33,8 @@ class LocationService : Service() {
     private val TAG = "LocationService"
 
     private var databaserefernece: DatabaseReference? = null
+
+
 
     override fun onCreate() {
         super.onCreate()
@@ -94,7 +99,15 @@ class LocationService : Service() {
                 if (latitude != 0.0 && longitude != 0.0) {
                     databaserefernece?.child("lat")?.setValue(latitude)
                     databaserefernece?.child("lng")?.setValue(longitude)
-                    Log.d("Location::",latitude.toString() + ":::" + longitude.toString() + "Count" + count.toString() )
+                    var genzai =latitude.toString() + ":::" + longitude.toString() + "Count" + count.toString()
+                    Log.d("Location::",genzai)
+
+                    val intent = Intent("com.example.broadcast.MY_NOTIFICATION1")
+                    intent.putExtra("data", genzai)
+                    intent.putExtra("lat",latitude)
+                    intent.putExtra("lng",longitude)
+                    sendBroadcast(intent)
+
                 }
             }
         }
@@ -105,12 +118,16 @@ class LocationService : Service() {
         ) //1 * 60 * 1000 1 minute
     }
 
+
     fun stoptimertask() {
         if (timer != null) {
             timer!!.cancel()
             timer = null
         }
     }
+
+
+
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -144,4 +161,13 @@ class LocationService : Service() {
             }, Looper.myLooper()!!)
         }
     }
+
+
+
+
+
+
+
+
+
 }

@@ -62,6 +62,7 @@ public class API {
         client.newCall(request).enqueue(callback);
     }
 
+
     public void callImageuploadwithsingleimage (String baseurl, String method, ArrayList<ParameterModel> params, boolean isAvatar ,File avatarImg, Callback callback) {
         String url = baseurl + method;
         MultipartBody.Builder builder = new MultipartBody.Builder();
