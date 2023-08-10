@@ -37,6 +37,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     var mServiceIntent: Intent? = null
 
     private lateinit var mMap: GoogleMap
+    var latitude: Double = 0.0
+    var longitude: Double = 0.0
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +63,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         startlocationservice()
 
         //レシーバーセット
-        this.applicationContext.registerReceiver(
+/*        this.applicationContext.registerReceiver(
             MyBroadcastReceiver(),
+            IntentFilter("com.example.broadcast.MY_NOTIFICATION1")
+        )
+*/
+        //レシーバー匿名クラス
+        registerReceiver(
+            object: BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent) {
+                    // インテントに登録されている、名前"data"に対応する文字列をトーストで表示する
+                    Toast.makeText(context, intent.getStringExtra("data")+"main", Toast.LENGTH_SHORT).show()
+                    latitude= intent.getDoubleExtra("lat",0.0)
+                    longitude= intent.getDoubleExtra("lng",0.0)
+                    cameraPosition(mMap)
+                }
+            },
             IntentFilter("com.example.broadcast.MY_NOTIFICATION1")
         )
 
@@ -90,7 +108,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     fun cameraPosition(mMap:GoogleMap){
-        var defaultPosition = LatLng(35.70316439, 139.57984714)
+        var defaultPosition = LatLng(latitude,longitude)
         //カメラオブジェクト zoomレベルは小さいほど広角になっていく。
         val camera = CameraUpdateFactory.newLatLngZoom(defaultPosition, 15f)
         //カメラの移動
