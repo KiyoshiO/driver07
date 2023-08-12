@@ -114,8 +114,8 @@ class LocationService : Service() {
         timer!!.schedule(
             timerTask,
             0,
-            10000
-        ) //1 * 60 * 1000 1 minute
+            1000
+        )
     }
 
 

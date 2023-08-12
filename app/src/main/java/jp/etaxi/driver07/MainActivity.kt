@@ -9,14 +9,15 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.annotations.NotNull
@@ -40,6 +41,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     var latitude: Double = 0.0
     var longitude: Double = 0.0
 
+    var mapReprintSpan=10
+    var countDownNumber=30
+    var dummyCount=0
+    var oneShotFlg: Boolean=true
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,14 +56,38 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        val button = findViewById<Button>(R.id.button2)
-        button.setOnClickListener {
-            Toast.makeText(this, "クリックされました。", Toast.LENGTH_SHORT).show()
+        val button1 = findViewById<Button>(R.id.button1)
+        val button2 = findViewById<Button>(R.id.button2)
+        val button3 = findViewById<Button>(R.id.button3)
+        val messageArea= findViewById<TextView>(R.id.message)
+        button1.setOnClickListener {
+            //Toast.makeText(this, "受諾", Toast.LENGTH_SHORT).show()
 
-
+            val intent = Intent(this@MainActivity, MainActivity2::class.java)
+            //生成したオブジェクトを引数に画面を起動！
+            intent.putExtra("TEXT_KEY","東京都葛飾区青戸８丁目７−１９" + "\n" +"セブン-イレブン 葛飾青戸８丁目店")
+            startActivity(intent)
 
         }
 
+
+        button3.setOnClickListener {
+            //Toast.makeText(this, "拒否", Toast.LENGTH_SHORT).show()
+            oneShotFlg=true
+            button1.visibility=View.INVISIBLE
+            button2.visibility=View.INVISIBLE
+            button3.visibility=View.INVISIBLE
+            countDownNumber=30
+            dummyCount=0
+            messageArea.setText("待機中")
+        }
+
+
+        button1.visibility=View.INVISIBLE
+        button2.visibility=View.INVISIBLE
+        button3.visibility=View.INVISIBLE
+        messageArea.setText("待機中")
+        var address1:String="東京都葛飾区青戸８丁目７−１９" + "\n" +"セブン-イレブン 葛飾青戸８丁目店"
 
         //サービス起動
         startlocationservice()
@@ -73,10 +103,51 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             object: BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent) {
                     // インテントに登録されている、名前"data"に対応する文字列をトーストで表示する
-                    Toast.makeText(context, intent.getStringExtra("data")+"main", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, intent.getStringExtra("data")+"main", Toast.LENGTH_SHORT).show()
                     latitude= intent.getDoubleExtra("lat",0.0)
                     longitude= intent.getDoubleExtra("lng",0.0)
-                    cameraPosition(mMap)
+
+                    //マップ更新タイミング
+                    if (mapReprintSpan ==0){
+                        //位置情報を取得後の処理
+                        cameraPosition(mMap)
+                        setMarker(mMap)
+                        //button.setText(latitude.toString())
+                        mapReprintSpan=10
+                    } else {
+                        mapReprintSpan = mapReprintSpan -1
+
+                    }
+
+                    if (oneShotFlg){
+                        if (dummyCount>30){
+                            button1.visibility=View.VISIBLE
+                            button2.visibility=View.VISIBLE
+                            button3.visibility=View.VISIBLE
+                            oneShotFlg=false
+
+                            messageArea.setText(address1)
+                        } else {
+                            dummyCount=dummyCount+1
+                        }
+                    }
+
+                    if (button2.visibility==View.VISIBLE) {
+                        button2.setText(countDownNumber.toString())
+                        countDownNumber=countDownNumber-1
+                        if (countDownNumber==0){
+                            button1.visibility=View.INVISIBLE
+                            button2.visibility=View.INVISIBLE
+                            button3.visibility=View.INVISIBLE
+                            countDownNumber=30
+                            messageArea.setText("待機中")
+                            dummyCount=0
+                            oneShotFlg=true
+                        }
+                    }
+
+
+
                 }
             },
             IntentFilter("com.example.broadcast.MY_NOTIFICATION1")
@@ -85,13 +156,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
+
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
         //ピンマーカーのクリックイベントリスナー
         mMap.setOnMarkerClickListener { marker ->
             val id = marker.id.replace("m", "").toInt()
-            Toast.makeText(this, id.toString(), Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, id.toString(), Toast.LENGTH_SHORT).show()
             //click時にカメラを移動する trueは移動しない
             false
         }
@@ -99,13 +171,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         //ピンマーカーにセットしたタイトルのクリックイベントリスナー
         mMap.setOnInfoWindowClickListener { marker ->
             val id = marker.id.replace("m", "").toInt()
-            Toast.makeText(this, id.toString(), Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, id.toString(), Toast.LENGTH_SHORT).show()
         }
 
 
         cameraPosition(mMap)
         setMarker(mMap)
     }
+
+
+
+
+    //ｈｔｔｐアクセステスト
+    fun test(){
+        var pas= ArrayList<ParameterModel?>()
+        pas.add (ParameterModel("userCode","12345689"))
+        pas.add (ParameterModel("orderType","nomalTaxi"))
+        pas.add (ParameterModel("reserveFlag","now"))
+
+        call_postApi("http://e-taxi.jp/","ordermenu.php",pas)
+    }
+
 
     fun cameraPosition(mMap:GoogleMap){
         var defaultPosition = LatLng(latitude,longitude)
@@ -117,12 +203,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     fun setMarker(mMap:GoogleMap){
         val options = MarkerOptions()
-        options.position( LatLng(35.70436915, 139.57947137) )
+        options.position( LatLng(latitude,longitude) )
         mMap.addMarker(options);
 
-        options.position( LatLng(35.70138951, 139.5772505) )
-        options.title("test")
-        mMap.addMarker(options);
+        //options.position( LatLng(35.70138951, 139.5772505) )
+        //options.title("test")
+        //mMap.addMarker(options);
     }
 
 
@@ -143,7 +229,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 override fun onFailure(@NotNull call: Call, @NotNull e: IOException) {
                     Log.d("execption==", e.toString())
                     runOnUiThread {
-                        DynamicToast.makeError(this@MainActivity, "エラー1000", 2500).show()
+                        DynamicToast.makeError(this@MainActivity, "エラー100", 2500).show()
                     }
                 }
             }
@@ -232,17 +318,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mServiceIntent = Intent(this, mLocationService.javaClass)
         if (!isMyServiceRunning(mLocationService.javaClass, this)) {
             startService(mServiceIntent)
-            Toast.makeText(
-                this,
-                "サービススタート",
-                Toast.LENGTH_SHORT
-            ).show()
+            //Toast.makeText(this,"サービススタート",Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(
-                this,
-                "サービス実行中",
-                Toast.LENGTH_SHORT
-            ).show()
+            //Toast.makeText(this,"サービス実行中",Toast.LENGTH_SHORT).show()
         }
     }
 
