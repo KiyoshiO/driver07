@@ -68,17 +68,20 @@ class MainActivity2 : AppCompatActivity() {
         registerReceiver(
             object: BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent) {
-                    // インテントに登録されている、名前"data"に対応する文字列をトーストで表示する
                     //Toast.makeText(context, intent.getStringExtra("data")+"main", Toast.LENGTH_SHORT).show()
                     Toast.makeText(context, dummy.toString()+"--"+ttt.toString(), Toast.LENGTH_SHORT).show()
                     if (dummy==20){
-                        message0.setText("迎車確定")
-                        button1.setText("迎車回送開始")
+
                         dummy=0
                         ttt=ttt+1
+                        Toast.makeText(context, "表示セット", Toast.LENGTH_SHORT).show()
+                        message0.text="迎車確定"
+                        button1.text="迎車回送開始"
+
                     } else {
                         if(button1.text=="") {
                             dummy = dummy + 1
+
                         }
                     }
 
@@ -95,10 +98,14 @@ class MainActivity2 : AppCompatActivity() {
         super.onResume()
     // 初期化したい処理を書く
         dummy=0
+        var button1=findViewById<Button>(R.id.button1)
+        var button2=findViewById<Button>(R.id.button2)
+        button1.setText("")
+        button2.setText("")
 
     }
 
-fun toBack(){
+    fun toBack(){
 
     val intent = Intent(this@MainActivity2, MainActivity::class.java)
     startActivity(intent)
